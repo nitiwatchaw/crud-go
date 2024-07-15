@@ -20,3 +20,5 @@ type UpdateTodo struct {
 	Check   bool   `json:"check" validate:"required"`
 	User_id string `json:"user_id" validate:"required"`
 }
+
+

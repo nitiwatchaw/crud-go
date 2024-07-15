@@ -20,6 +20,8 @@ import (
 )
 
 var userCollections *mongo.Collection = database.OpenCollection(database.Client, "users")
+var deleteCollections *mongo.Collection = database.OpenCollection(database.Client, "deleted_users_todo")
+
 var validate = validator.New()
 
 func HashPassword(password string) string {
@@ -275,4 +277,68 @@ func GetUser() gin.HandlerFunc {
 
 	}
 
+}
+
+func DeleteUser() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userId := c.Param("user_id")
+
+		if err := helper.CheckUserType(c, "ADMIN"); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		if err := helper.MatchUserTypeToUid(c, userId); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+
+		defer cancel()
+
+		var dataDeleted models.DeleteModal
+
+		var results []models.Todo
+		//find user data
+		userData := userCollections.FindOne(ctx, bson.M{"user_id": userId}).Decode(&dataDeleted.User)
+		if userData != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "User not found"})
+			return
+		}
+
+		//find todo data
+		cursor, err := todoCollections.Find(ctx, bson.M{"user_id": userId})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching todos"})
+			return
+		}
+		if err = cursor.All(ctx, &results); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error decoding todos"})
+			return
+		}
+
+		//insert data to deleted collection
+		dataDeleted.Todos = results
+		_, errdelete := deleteCollections.InsertOne(ctx, dataDeleted)
+		if errdelete != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while deleting user"})
+			return
+		}
+
+		// Delete the user
+		_, errDelUser := userCollections.DeleteMany(ctx, bson.M{"user_id": userId})
+		if errDelUser != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while deleting user"})
+			return
+		}
+
+		// Delete the todos associated with the user
+		_, err = todoCollections.DeleteMany(ctx, bson.M{"user_id": userId})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while deleting user's todos"})
+			return
+		}
+		
+		c.JSON(http.StatusOK, gin.H{"message": "User and associated todos deleted successfully"})
+	}
 }

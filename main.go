@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -19,6 +20,7 @@ func main() {
 	routes.AuthRouter(router)
 	routes.UserRouter(router)
 	routes.TodoRouter(router)
+	routes.DeletedRouter(router)
 
 	router.Run(":" + port)
 }

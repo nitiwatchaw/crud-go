@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"nitiwat/database"
 	helper "nitiwat/helpers"
@@ -28,7 +27,7 @@ func GetTodo() gin.HandlerFunc {
 			return
 		}
 		var todos []bson.M
-		fmt.Println("cursor", cursor)
+		// fmt.Println("cursor", cursor)
 		if err = cursor.All(ctx, &todos); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
