@@ -1,7 +1,9 @@
 package models
 
+import "go.mongodb.org/mongo-driver/bson/primitive"
+
 type DeleteModal struct {
-	// Todo
+	ID    primitive.ObjectID `json:"id"`
 	User  User
 	Todos []Todo
 }

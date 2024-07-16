@@ -325,6 +325,8 @@ func DeleteUser() gin.HandlerFunc {
 			return
 		}
 
+		dataDeleted.ID = primitive.NewObjectID()
+
 		// Delete the user
 		_, errDelUser := userCollections.DeleteMany(ctx, bson.M{"user_id": userId})
 		if errDelUser != nil {
@@ -338,7 +340,7 @@ func DeleteUser() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while deleting user's todos"})
 			return
 		}
-		
+
 		c.JSON(http.StatusOK, gin.H{"message": "User and associated todos deleted successfully"})
 	}
 }
